@@ -1,5 +1,5 @@
-import sdk, { Device, DeviceProvider, FFmpegInput, MediaObject, MotionSensor, ResponseMediaStreamOptions, ScryptedDeviceBase, ScryptedDeviceType, ScryptedInterface, Setting, SettingValue, Settings, VideoCamera } from '@scrypted/sdk';
-import { StorageSettings } from '@scrypted/sdk/dist/src/storage-settings';
+import sdk, { Device, DeviceProvider, FFmpegInput, MediaObject, ResponseMediaStreamOptions, ScryptedDeviceBase, ScryptedDeviceType, ScryptedInterface, Setting, SettingValue, Settings, VideoCamera } from '@scrypted/sdk';
+import { StorageSettings } from '@scrypted/sdk/storage-settings';
 import { EufySecurity, Camera as EufyCamera, CaptchaOptions, Device as EufyDevice, P2PConnectionType, Station as EufyStation, EufySecurityConfig } from 'eufy-security-client';
 import { EufyLogger } from './logger';
 
