@@ -1,6 +1,6 @@
 {
-   "name": "@sunshineV9/eufy-security-scrypted",
-   "description": "Eufy Security plugin for scrypted",
+   "name": "@sunshineV9/eufy-scrypted",
+   "description": "Eufy Plugin for Scrypted",
    "version": "0.0.1",
    "scripts": {
       "scrypted-setup-project": "scrypted-setup-project",
@@ -18,14 +18,13 @@
    "keywords": [
       "scrypted",
       "plugin",
-      "Eufy",
-      "Eufy Security"
+      "eufy",
+      "camera"
    ],
    "scrypted": {
-      "name": "Eufy Security Plugin",
+      "name": "Eufy",
       "type": "DeviceProvider",
       "interfaces": [
-         "DeviceCreator",
          "DeviceProvider",
          "Settings"
       ]
