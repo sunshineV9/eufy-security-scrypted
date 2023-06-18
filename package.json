@@ -1,5 +1,7 @@
 {
-   "name": "@scrypted/vscode-typescript",
+   "name": "@sunshineV9/eufy-security-scrypted",
+   "description": "Eufy Security plugin for scrypted",
+   "version": "0.0.1",
    "scripts": {
       "scrypted-setup-project": "scrypted-setup-project",
       "prescrypted-setup-project": "scrypted-package-json",
@@ -13,18 +15,26 @@
       "scrypted-readme": "scrypted-readme",
       "scrypted-package-json": "scrypted-package-json"
    },
+   "keywords": [
+      "scrypted",
+      "plugin",
+      "Eufy",
+      "Eufy Security"
+   ],
    "scrypted": {
-      "name": "TypeScript Light",
-      "type": "Light",
+      "name": "Eufy Security Plugin",
+      "type": "DeviceProvider",
       "interfaces": [
-         "OnOff"
+         "DeviceCreator",
+         "DeviceProvider",
+         "Settings"
       ]
    },
    "dependencies": {
-      "axios": "^0.24.0"
+      "eufy-security-client": "2.6.2"
    },
    "devDependencies": {
-      "@scrypted/sdk": "^0.2.49",
-      "@types/node": "^18.15.8"
+      "@scrypted/sdk": "0.2.103",
+      "@types/node": "18.16.0"
    }
 }
