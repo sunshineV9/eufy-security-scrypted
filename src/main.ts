@@ -1,31 +1,95 @@
-import sdk, { Device, DeviceProvider, FFmpegInput, MediaObject, ResponseMediaStreamOptions, ScryptedDeviceBase, ScryptedDeviceType, ScryptedInterface, Setting, SettingValue, Settings, VideoCamera } from '@scrypted/sdk';
+import sdk, { Camera, Device, DeviceProvider, FFmpegInput, MediaObject, MotionSensor, OnOff, RequestMediaStreamOptions, RequestPictureOptions, ResponseMediaStreamOptions, ResponsePictureOptions, ScryptedDeviceBase, ScryptedDeviceType, ScryptedInterface, ScryptedMimeTypes, Setting, SettingValue, Settings, VideoCamera } from '@scrypted/sdk';
 import { StorageSettings } from '@scrypted/sdk/storage-settings';
-import { EufySecurity, Camera as EufyCamera, CaptchaOptions, Device as EufyDevice, P2PConnectionType, Station as EufyStation, EufySecurityConfig } from 'eufy-security-client';
+import { EufySecurity, Camera as EufyCamera, CaptchaOptions, Device as EufyDevice, P2PConnectionType, Station as EufyStation, EufySecurityConfig, Station } from 'eufy-security-client';
 import { EufyLogger } from './logger';
 
 const { deviceManager, mediaManager } = sdk;
 
-class EufySecurityCamera extends ScryptedDeviceBase implements VideoCamera {
-    client: EufySecurity;
-    device: EufyCamera;
+class EufySecurityCamera extends ScryptedDeviceBase implements VideoCamera, Camera, OnOff, MotionSensor {
+    private station: Station;
 
-    constructor(nativeId: string, client: EufySecurity, device: EufyCamera) {
+    constructor(nativeId: string, private client: EufySecurity, private device: EufyCamera) {
         super(nativeId);
-        this.client = client;
-        this.device = device;
+        this.initialize();
     }
 
-    getVideoStream(options?: ResponseMediaStreamOptions): Promise<MediaObject> {
-        const input: FFmpegInput = {
-            url: 'rtsp://' + this.device.getPropertyValue('ip')
+    private async initialize() {
+        this.station = await this.client.getStation(this.device.getStationSerial());
+        this.station.on('livestream start', (station, channel, metadata, videoStream, audioStream) => {
+        });
+
+        this.on = this.device.isEnabled() as boolean;
+
+        this.setupMotionDetection();
+    }
+
+    setupMotionDetection() {
+        const handle = (device: EufyDevice, state: boolean) => {
+          this.motionDetected = state;
+        };
+        this.device.on('motion detected', handle);
+        this.device.on('person detected', handle);
+        this.device.on('pet detected', handle);
+        this.device.on('vehicle detected', handle);
+        this.device.on('dog detected', handle);
+        this.device.on('radar motion detected', handle);
+      }
+
+    async turnOff(): Promise<void> {
+        if (this.device.isEnabled() as boolean === true) {
+            await this.station.enableDevice(this.device, false);
+        }
+
+        this.on = false;
+    }
+
+    async turnOn(): Promise<void> {
+        if (this.device.isEnabled() as boolean === false) {
+            await this.station.enableDevice(this.device, true);
+        }
+
+        this.on = true;
+    }
+
+    takePicture(options?: RequestPictureOptions): Promise<MediaObject> {
+        const picture = this.device.getPropertyValue('picture');
+        return mediaManager.createMediaObject((picture as any).data, 'image/jpeg');
+    }
+
+    async getPictureOptions(): Promise<ResponsePictureOptions[]> {
+        return [
+            {
+                canResize: true,
+                staleDuration: 10
+            }
+        ]
+    }
+
+    getVideoStream(options?: RequestMediaStreamOptions): Promise<MediaObject> {
+        let ffmpegInput: FFmpegInput;
+
+        ffmpegInput = {
+            // the input doesn't HAVE to be an url, but if it is, provide this hint.
+            url: this.device.getPropertyValue('rtspStreamUrl').toString(),
+            inputArguments: [
+                '-re',
+                '-stream_loop', '-1',
+                '-i', this.device.getRawDevice().ip_addr + this.device.getPropertyValue('hidden-pictureUrl').toString(),
+            ]
         };
 
-        return mediaManager.createFFmpegMediaObject(input);
+        return mediaManager.createMediaObject(Buffer.from(JSON.stringify(ffmpegInput)), ScryptedMimeTypes.FFmpegInput);
     }
 
     async getVideoStreamOptions(): Promise<ResponseMediaStreamOptions[]> {
-        return [];
-    }
+        return [{
+            id: 'stream',
+            audio: null,
+            video: {
+                codec: 'h264',
+            }
+        }];
+      }
 }
 
 class EufySecurityPlugin extends ScryptedDeviceBase implements DeviceProvider, Settings {
@@ -154,13 +218,11 @@ class EufySecurityPlugin extends ScryptedDeviceBase implements DeviceProvider, S
         const nativeId = eufyDevice.getSerial();
 
         const interfaces = [
-            ScryptedInterface.VideoCamera
+            ScryptedInterface.VideoCamera,
+            ScryptedInterface.Camera,
+            ScryptedInterface.OnOff
         ];
-        if (eufyDevice.hasBattery())
-            interfaces.push(ScryptedInterface.Battery);
-        if (eufyDevice.hasProperty('motionDetection'))
-            interfaces.push(ScryptedInterface.MotionSensor);
-
+        
         const device: Device = {
             info: {
                 model: eufyDevice.getModel(),
